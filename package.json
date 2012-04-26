@@ -1,0 +1,11 @@
+{
+ "name":"rex",
+ "description":"rex is high performance browserside commonjs connect middleware",
+ "keywords": ["browser", "commonjs", "connect"],
+ "version":"0.5.0",
+ "author": "Ge.tt <hello@ge.tt>",
+ "contributors": [
+   "Mathias Buus Madsen <m@ge.tt>"
+ ],
+ "dependencies": {"common":">=0.2.0", "uglify-js":">=1.2.6"}
+}
