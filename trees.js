@@ -17,7 +17,7 @@ var findModule = function(name, cwd, callback) {
 		function(next) {
 			files = Array.prototype.concat.apply([], MODULE_FOLDERS.map(function(folder) {
 				folder = path.join(cwd, folder);
-				return [path.join(folder, name, 'index.js'), path.join(folder, name.replace(/\.js$/, '')+'.js')];
+				return [path.join(folder, name, 'browser.js'), path.join(folder, name, 'index.js'), path.join(folder, name.replace(/\.js$/, '')+'.js')];
 			}));
 			files.forEach(function(file) {
 				path.exists(file, next.parallel().bind(null, null));
