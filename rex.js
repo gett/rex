@@ -58,7 +58,7 @@
 		};
 		require = function(name) {
 			for (var i in modules) {
-				if (modules[i].name === name) return modules[i];
+				if (modules[i].name === name) return modules[i].exports;
 			}
 			return global(name);
 		};
