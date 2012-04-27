@@ -44,7 +44,7 @@ var resolve = function(url, options, callback) {
 	var humanify = function(path) {
 		var dir = root.replace(/\/$/, '')+'/';
 
-		if (path.indexOf(dir) === 0) return path.replace(dir);
+		if (path.indexOf(dir) === 0) return path.replace(dir, '');
 		return path.replace('/index.js', '').replace('/browser.js', '').split('/').pop();
 	};
 	var resolveFile = function(url, callback) {
