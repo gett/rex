@@ -63,7 +63,7 @@ module.exports = function(root, options) {
 			}
 
 			var gzip = /(^|\,)gzip(\,|$)/.test(req.headers['accept-encoding'] || '') && result.gzip;
-			var buf = gzip || res.buffer;
+			var buf = gzip || result.buffer;
 
 			res.statusCode = 200;
 			res.setHeader('ETag', result.etag);
