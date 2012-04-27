@@ -123,7 +123,7 @@ parser.requires = function(src) { // mainly exposed for testing...
 
 	src = src.replace(/'((?:(?:\\')|[^'])*)'/g, save);                      // save ' based strings
 	src = src.replace(/"((?:(?:\\")|[^"])*)"/g, save);                      // save " based strings
-	src = src.replace(/(\n|^).*\/\/\s*node\s*[-]?\s*only\s*(\n|$)/g, '$1'); // remove all ignore lines
+	src = src.replace(/(\n|^).*\/\/\s*@rex-ignore\s*(\n|$)/gi, '$1');       // remove all ignore lines
 	src = src.replace(/\\\//g, '@');                                        // regexps
 	src = src.replace(/\/\/.*/g, '@');                                      // remove all comments
 	src = src.replace(/\/\*([^*]|\*[^\/])*\*\//g, '@');                     // remove all multiline comments
@@ -131,9 +131,10 @@ parser.requires = function(src) { // mainly exposed for testing...
 	// missing some lookahead / lookbehind logic here
 	src.replace(/(?:^|[^\w.])require\s*\(\s*((?:\d+(?:\s*,\s*)?)+)\s*\)(?:[^\w]|$)/g, function(_, i) {
 		i.split(/\s*,\s*/g).forEach(function(i) {
+			if (modules.indexOf(strs[i]) > -1) return;
 			modules.push(strs[i]);
 		});
-	});	
+	});
 
 	return modules;
 };
