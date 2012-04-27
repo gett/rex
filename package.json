@@ -2,7 +2,7 @@
  "name":"rex",
  "description":"rex is high performance browserside commonjs connect middleware",
  "keywords": ["browser", "commonjs", "connect"],
- "version":"0.5.1",
+ "version":"0.5.2",
  "author": "Ge.tt <hello@ge.tt>",
  "contributors": [
    "Mathias Buus Madsen <m@ge.tt>"
