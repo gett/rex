@@ -10,6 +10,9 @@ var watching = {};
 var md5 = function(str) {
 	return crypto.createHash('md5').update(str).digest('hex');
 };
+var dotjs = function(name) {
+	return name.replace(/\.js$/, '')+'.js';
+};
 var findModule = function(name, cwd, callback) {
 	var files;
 
@@ -17,7 +20,7 @@ var findModule = function(name, cwd, callback) {
 		function(next) {
 			files = Array.prototype.concat.apply([], MODULE_FOLDERS.map(function(folder) {
 				folder = path.join(cwd, folder);
-				return [path.join(folder, name, 'browser.js'), path.join(folder, name, 'index.js'), path.join(folder, name.replace(/\.js$/, '')+'.js')];
+				return [path.join(folder, name, 'browser.js'), path.join(folder, name, 'index.js'), path.join(folder, dotjs(name))];
 			}));
 			files.forEach(function(file) {
 				path.exists(file, next.parallel().bind(null, null));
@@ -38,12 +41,18 @@ var findModule = function(name, cwd, callback) {
 var resolve = function(url, options, callback) {
 	var root = options.root;
 	var cache = {};
+	var humanify = function(path) {
+		var dir = root.replace(/\/$/, '')+'/';
+
+		if (path.indexOf(dir) === 0) return path.replace(dir);
+		return path.replace('/index.js', '').replace('/browser.js', '').split('/').pop();
+	};
 	var resolveFile = function(url, callback) {
 		if (!url) return callback(null, null);
 		if (cache[url]) return callback(null, cache[url]);
 
 		var cwd = path.dirname(url);
-		var mod = cache[url] = {url: url, name: url.indexOf(root) === 0 ? url.replace(root, '') : url.split('/').pop()};
+		var mod = cache[url] = {url: url, name: humanify(url)};
 		var reqs;
 
 		common.step([
@@ -61,7 +70,7 @@ var resolve = function(url, options, callback) {
 
 				reqs.forEach(function(req, i) {
 					if (options.dependencies[req]) return next.parallel()();
-					if (req[0] === '.') return next.parallel()(null, path.join(cwd, req.replace(/\.js$/i, '')+'.js'));
+					if (req[0] === '.') return next.parallel()(null, path.join(cwd, dotjs(req)));
 					findModule(req, cwd, next.parallel());
 				});
 			},
