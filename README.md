@@ -15,7 +15,8 @@ var app = connect(); // this could also be an express instance
 app.use('/js', rex('js')); // rex will now serve all your javascript from the js folder
 ```
 
-Your browserside javascript can now use `require` to require other modules and `exports` and `module.exports` just like in node.js
+Your browserside javascript can now use `require` to require other modules and `exports` and `module.exports` just like in node.js.
+Additionally if your module exports a global variable with the same name as your module `require` will still work!
 If you require a module like `require('my-module')` rex will look for it in the nearest `browser_modules` or `node_modules` folder.
 
 ``` js
