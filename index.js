@@ -50,6 +50,9 @@ module.exports = function(root, options) {
 	var boiler = options.minify ? REX_SOURCE_MIN : REX_SOURCE;
 	var cache = options.cache && {};
 
+	var onchange = function() {
+		if (options.onchange) options.onchange();
+	};
 	var middleware = function(req, res, next) {
 		var url = filename || path.normalize('/'+req.url.split('?')[0]).substr(1);
 
@@ -142,6 +145,7 @@ module.exports = function(root, options) {
 
 				cache[url] = result;
 				trees.watch(tree, function() {
+					onchange();
 					delete cache[url];
 				});
 
