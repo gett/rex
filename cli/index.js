@@ -1,5 +1,7 @@
 #!/usr/bin/env node
 
+// TODO: clean up this messy code
+
 var argv = require('optimist')
 			.alias('o', 'out')
 			.alias('m', 'minify')
