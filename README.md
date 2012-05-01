@@ -60,3 +60,7 @@ You can pass a set of options with `rex(folder_or_path, options)`. They include:
 Performance is one of the main goals of this project. Rex caches all the files requested in ram until they are changed.
 This means that the files are only parsed once and all subsequent requests will just be returning a stored buffer.
 The cache includes a gzipped version of the content which rex will serve if the client supports gzipping.
+
+# License
+
+MIT
