@@ -6,7 +6,7 @@ It's available through npm:
 
 	npm install rex
 
-There is also a cli program available through
+There is also a cli program available
 
 	npm install rex-cli
 	rex --help
