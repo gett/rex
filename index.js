@@ -155,6 +155,6 @@ module.exports = function(root, options) {
 	};
 
 	return function(req, res, next) {
-		return (typeof req === 'string') ? compile(req, res) : middleware(req, res, next);
+		return (typeof req === 'string' || typeof req === 'function') ? compile(req, res) : middleware(req, res, next);
 	};
 };

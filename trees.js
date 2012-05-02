@@ -41,6 +41,13 @@ var findModule = function(name, cwd, callback) {
 var resolve = function(url, options, callback) {
 	var root = options.root;
 	var cache = {};
+	var inlined;
+
+	if (typeof url === 'function') {
+		inlined = url;
+		url = path.join(options.root, 'source.js');
+	}
+
 	var humanify = function(path) {
 		var dir = root.replace(/\/$/, '')+'/';
 
@@ -57,12 +64,14 @@ var resolve = function(url, options, callback) {
 
 		common.step([
 			function(next) {
+				if (inlined) return next(null, inlined.toString().replace(/^[^\{]*\{/g, '').replace(/\}\s*$/g, ''));
 				fs.readFile(url, 'utf-8', next);
 			},
 			function(source, next) {
 				mod.dependencies = {};
 				mod.source = source;
 				mod.id = md5(url);
+				mod.inlined = inlined;
 
 				reqs = parser.requires(source);
 
@@ -158,6 +167,7 @@ parser.visit = function(tree, fn) {
 };
 parser.watch = function(tree, fn) {
 	parser.visit(tree, function(mod) {
+		if (mod.inlined) return;
 		if (watching[mod.url]) return watching[mod.url].push(fn);
 		watching[mod.url] = [fn];
 

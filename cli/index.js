@@ -2,22 +2,27 @@
 
 var argv = require('optimist')
 			.alias('o', 'out')
-			.alias('m', 'minify')
+			.alias('m', 'main')
+			.alias('c', 'minify')
 			.alias('h', 'help')
 			.alias('w', 'watch')
+			.alias('l', 'listen')
 			.argv;
 
+var cat = require('cat');
 var rex = require('rex');
 var fs = require('fs');
+var http = require('http');
 var options = {};
 
 if (process.argv.length < 3 || argv.help) {
 	console.error('\nusage: rex path [options]\n\n'+
 		'if you create a rex.json file in your js dir rex will use its settings\n\n'+
-		'--main   -m: specify a main js file that rex can assume is loaded before any other file\n'+
-		'--minify   : minify the compiled code\n'+
-		'--out,   -o: compile to a specific path or file suffix if input path is a dir\n'+
-		'--watch, -w: watch the file and recompile if it or its dependencies changes. requires -o\n'
+		'--main    -m: specify a main js file that rex can assume is loaded before any other file\n'+
+		'--minify  -c: minify the compiled code\n'+
+		'--out,    -o: compile to a specific path or file suffix if input path is a dir\n'+
+		'--watch,  -w: watch the file and recompile if it or its dependencies changes. requires -o\n'+
+		'--listen, -l: start a rex server on a given port serving cwd. port defaults to 8888\n'
 	);
 	process.exit(0);
 	return;
@@ -39,6 +44,34 @@ options.onchange = function() {
 
 var file = process.argv[2];
 var parse = rex('.', options);
+
+if (argv.listen) {
+	var port = typeof argv.listen === 'number' ? argv.listen : 8888;
+
+	http.createServer(function(req, res) {
+		res.writeHead(200, {'Content-Type':'text/javascript'});
+
+		if (req.url === '/') {
+			res.end('document.write("<script src=\'http://'+req.headers.host+'/"+encodeURIComponent(""+location)+"\'></script>");');
+			return;
+		}
+
+		var url = decodeURIComponent(req.url.substr(1));
+
+		cat(url, function(err, str) {
+			if (err) return res.end(err.stack);
+
+			var src = (str.match(/<script[^>]+src=[^>]+>((?:\s|\S)+)<\/script>/i) || [])[1];
+
+			parse(new Function(src), function(err, js) {
+				if (err) return res.end(err.stack);
+				res.end(js);
+			});
+		});
+	}).listen(port);
+	return;
+}
+
 var stat = fs.statSync(file);
 var out = typeof argv.out === 'string' && argv.out;
 
