@@ -8,7 +8,7 @@ It's available through npm:
 
 There is also a cli program available
 
-	npm install rex-cli
+	npm install -g rex-cli
 	rex --help
 
 Usage is simple:
