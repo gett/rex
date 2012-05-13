@@ -15,26 +15,43 @@ var dotjs = function(name) {
 };
 var findModule = function(name, cwd, callback) {
 	var files;
+	var url;
 
 	common.step([
 		function(next) {
 			files = Array.prototype.concat.apply([], MODULE_FOLDERS.map(function(folder) {
 				folder = path.join(cwd, folder);
-				return [path.join(folder, name, 'browser.js'), path.join(folder, name, 'index.js'), path.join(folder, dotjs(name))];
+				return [
+					path.join(folder, name, 'browser.js'),
+					path.join(folder, name, 'index.js'),
+					path.join(folder, name, 'package.json'),
+					path.join(folder, dotjs(name))
+				];
 			}));
 			files.forEach(function(file) {
 				path.exists(file, next.parallel().bind(null, null));
 			});
 		},
-		function(exists) {
-			var url = files.filter(function(_, i) {
+		function(exists, next) {
+			url = files.filter(function(_, i) {
 				return exists[i];
 			})[0];
 
+			if (url && /\.json$/.test(url)) return fs.readFile(url, 'utf-8', next);
 			if (url) return callback(null, url);
 			if (cwd === '/') return callback(null, null);
 
 			findModule(name, path.join(cwd, '..'), callback);
+		},
+		function(json) {
+			try {
+				json = JSON.parse(json);
+			} catch (err) {
+				return callback(err);
+			}
+
+			if (!json.browserify && !json.main) return callback(null, null);
+			callback(null, path.join(path.dirname(url), json.browserify || json.main));
 		}
 	], callback);
 };
