@@ -6,7 +6,6 @@ var path = require('path');
 var MODULE_FOLDERS = 'browser_modules js_modules node_modules'.split(' ');
 var WATCH_OPTIONS = {interval: 100, persistent: false};
 
-var watching = {};
 var md5 = function(str) {
 	return crypto.createHash('md5').update(str).digest('hex');
 };
@@ -183,18 +182,21 @@ parser.visit = function(tree, fn) {
 	first(tree);
 };
 parser.watch = function(tree, fn) {
+	var files = [];
+	var onchange = function(prev, cur) {
+		if (prev.mtime.getTime() === cur.mtime.getTime()) return;
+		files.forEach(function(file) {
+			file.removeListener('change', onchange);
+		});
+		fn();
+	};
+
 	parser.visit(tree, function(mod) {
 		if (mod.inlined) return;
-		if (watching[mod.url]) return watching[mod.url].push(fn);
-		watching[mod.url] = [fn];
-
-		fs.watchFile(mod.url, WATCH_OPTIONS, function(cur, prev) {
-			if (cur.mtime.getTime() === prev.mtime.getTime()) return;
-
-			watching[mod.url].forEach(function(fn) {
-				fn(mod.url);
-			});
-		});
+		files.push(mod.url);
+	});
+	files = files.map(function(file) {
+		return (file = fs.watchFile(file, WATCH_OPTIONS, onchange)).setMaxListeners(0) || file;
 	});
 };
 
