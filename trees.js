@@ -55,17 +55,15 @@ var findModule = function(name, cwd, callback) {
 	], callback);
 };
 var resolve = function(url, options, callback) {
-	var cache = {};
-	var inlined;
-	var roots;
+	var source;
 
 	if (typeof url === 'function') {
-		inlined = url;
-		url = 'source.js';
-		roots = [];
-	} else {
-		roots = path.dirname(url).split('/');
+		source = url.toString().replace(/^[^\{]*\{/g, '').replace(/\}\s*$/g, '');
+		url = process.cwd()+'/--source.js';
 	}
+
+	var cache = {};
+	var roots = path.dirname(url).split('/');
 
 	var hideRoot = function(path) {
 		path = path.split('/');
@@ -79,6 +77,10 @@ var resolve = function(url, options, callback) {
 		}
 		return path.join('/');
 	};
+	var readFile = function(url, callback) {
+		if (/--source.js$/.test(url)) return callback(null, source);
+		return fs.readFile(url, 'utf-8', callback);
+	};
 	var resolveFile = function(url, callback) {
 		if (!url) return callback(null, null);
 		if (cache[url]) return callback(null, cache[url]);
@@ -89,14 +91,12 @@ var resolve = function(url, options, callback) {
 
 		common.step([
 			function(next) {
-				if (inlined) return next(null, inlined.toString().replace(/^[^\{]*\{/g, '').replace(/\}\s*$/g, ''));
-				fs.readFile(url, 'utf-8', next);
+				readFile(url, next);
 			},
 			function(source, next) {
 				mod.dependencies = {};
 				mod.source = source;
 				mod.id = md5(url);
-				mod.inlined = inlined;
 
 				reqs = parser.requires(source);
 
@@ -124,7 +124,7 @@ var resolve = function(url, options, callback) {
 		], callback);
 	};
 
-	resolveFile(path.join(root, url), callback);
+	resolveFile(url, callback);
 };
 var parser = function(options) {
 	options = options || {};
@@ -133,6 +133,7 @@ var parser = function(options) {
 	return function(url, callback) {
 		common.step([
 			function(next) {
+				if (typeof url === 'function') return next(null, url);
 				fs.realpath(url, next);
 			},
 			function(url, next) {

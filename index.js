@@ -34,66 +34,55 @@ module.exports = function(options) {
 	var wrap = function(mod) {
 		var requires = {};
 		var src = (options.minify ? minify(mod.source) : mod.source)+'\n//@ sourceURL='+mod.name;
+		var padding = options.minify ? '' : '\t';
 
-		src = options.eval !== false ? JSON.stringify(src) : 'function(module, exports, require) {\n\t'+src.split('\n').join('\n\t')+'\n}';
+		src = options.eval !== false ? JSON.stringify(src) : 'function(module, exports, require) {\n'+padding+src.split('\n').join('\n'+padding)+'\n}';
 
 		Object.keys(mod.dependencies).forEach(function(req) {
 			requires[req] = mod.dependencies[req].id;
 		});
 		return 'rex("'+mod.id+'",'+JSON.stringify(requires)+','+src+');';
 	};	
-	var realpath = function(url, callback) {
-		if (!url) return callback();
-		if (url[0] === '/') return callback(null, url);
-		fs.realpath(url, callback);
-	};
-	var stringify = function(file, tree, filter) {
+	var stringify = function(tree, base) {
 		var result = '';
+		var filter = {};
+		var based = base && base.id !== tree.id;
 
+		if (based) {
+			tree.visit(base, function(mod) {
+				filter[mod.id] = true;
+			});
+		}
 		trees.visit(tree, function(mod) {
 			if (filter[mod.id]) return;
 			result += wrap(mod)+'\n';
 		});
 
-		if (options.base && options.base !== file) return result+'rex.run("'+tree.id+'");\n';
+		if (based) return result+'rex.run("'+tree.id+'");\n';
 		return boiler+'\n'+result+'rex.run("'+tree.id+'",'+JSON.stringify(urls)+');\n';
 	};
 
 	return function(url, callback) {
-		var filter = {};
+		var base = options.base;
 
 		common.step([
 			function(next) {
-				realpath(url, next.parallel());
-				realpath(options.base, next.parallel());
+				if (base) return parse(base, next);
+				next();
 			},
-			function(arr, next) {
-				url = arr[0];
-				options.base = arr[1];
-
-				if (options.base && url !== options.base) {
-					parse(options.base, next);
-				} else {
-					next();
-				}
-			},
-			function(base, next) {
-				if (base) {
-					trees.visit(base, function(mod) {
-						filter[mod.id] = 1;
-					});
-				}
+			function(result, next) {
+				base = result;
 				parse(url, next);
 			},
 			function(tree) {
-				var result = stringify(url, tree, filter);
+				var result = stringify(tree, base);
 				var files = [];
 
 				trees.visit(tree, function(node) {
 					files.push(node.url);
 				});
 
-				callback(null, result, files);
+				callback(null, result, files);				
 			}
 		], callback);
 	};

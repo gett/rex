@@ -10,6 +10,7 @@ var argv = require('optimist')
 			.alias('w', 'watch')
 			.alias('l', 'listen')
 			.alias('n', 'noeval')
+			.alias('s', 'source')
 			.argv;
 
 var cat = require('cat');
@@ -21,6 +22,7 @@ var options = {};
 if (process.argv.length < 3 || argv.help) {
 	console.error('\nusage: rex path [options]\n\n'+
 		'if you create a rex.json file in your js dir rex will use its settings\n\n'+
+		'--source  -s: a string to compile instead of a file\n'+
 		'--base    -b: specify a base js file that rex can assume is loaded before any other file\n'+
 		'--minify  -m: minify the compiled code\n'+
 		'--out,    -o: compile to a specific path or file suffix if input path is a dir\n'+
@@ -40,11 +42,16 @@ if (!('minify' in options)) options.minify = argv.minify;
 if (!('base' in options)) options.base = typeof argv.base === 'string' && argv.base;
 if (!('eval' in options)) options.eval = !argv.noeval;
 
+argv.source = argv.source || options.source;
 argv.out = argv.out || options.out;
 argv.watch = argv.out && (argv.watch || options.watch);
 
 var file = process.argv[2];
 var parse = rex(options);
+
+if (typeof argv.source === 'string') {
+	file = new Function(argv.source);
+}
 
 if (argv.listen) {
 	var port = typeof argv.listen === 'number' ? argv.listen : 8888;
@@ -73,10 +80,10 @@ if (argv.listen) {
 	return;
 }
 
-var stat = fs.statSync(file);
+var stat = typeof file === 'string' && fs.statSync(file);
 var out = typeof argv.out === 'string' && argv.out;
 
-if (!out && stat.isDirectory()) out = 'lib';
+if (!out && stat && stat.isDirectory()) out = 'lib';
 
 var watch = function(files, fn) {
 	var onchange = function() {
@@ -91,7 +98,7 @@ var watch = function(files, fn) {
 	});
 };
 var compile = function() {
-	if (stat.isDirectory()) {
+	if (stat && stat.isDirectory()) {
 		out = out || 'lib';
 
 		fs.readdirSync(file).filter(function(file) {
@@ -106,6 +113,7 @@ var compile = function() {
 		});
 		return;
 	}
+
 	parse(file, function(err, str, files) {
 		if (argv.watch) watch(files, compile);
 		if (err) return console.error(err.stack);
