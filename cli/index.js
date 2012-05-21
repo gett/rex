@@ -9,6 +9,7 @@ var argv = require('optimist')
 			.alias('h', 'help')
 			.alias('w', 'watch')
 			.alias('l', 'listen')
+			.alias('n', 'noeval')
 			.argv;
 
 var cat = require('cat');
@@ -24,6 +25,7 @@ if (process.argv.length < 3 || argv.help) {
 		'--minify  -m: minify the compiled code\n'+
 		'--out,    -o: compile to a specific path or file suffix if input path is a dir\n'+
 		'--watch,  -w: watch the file and recompile if it or its dependencies changes. requires -o\n'+
+		'--noeval, -n: do not use eval in the compiled code\n'+ 
 		'--listen, -l: start a rex server on a given port serving cwd. port defaults to 8888\n'
 	);
 	process.exit(0);
@@ -36,6 +38,7 @@ try {
 
 if (!('minify' in options)) options.minify = argv.minify;
 if (!('base' in options)) options.base = typeof argv.base === 'string' && argv.base;
+if (!('eval' in options)) options.eval = !argv.noeval;
 
 argv.out = argv.out || options.out;
 argv.watch = argv.out && (argv.watch || options.watch);
