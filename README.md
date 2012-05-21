@@ -40,7 +40,7 @@ module.exports = function() { // will export a function
 
 # Options
 
-You can pass a set of options with `rex(folder_or_path, options)`. They include:
+You can pass a set of options with `rex(options)`. They include:
 
 * `base`: Specify a base js file. Rex will now assume that base's dependencies are loaded for all other requests.
 * `dependencies`: A map of global dependencies to be loaded in the client. This could be jQuery from a cdn i.e. `{jQuery:'http://cdn.com/jQuery.js'}`.
