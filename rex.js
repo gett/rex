@@ -2,6 +2,7 @@
 	if (typeof rex !== 'undefined') return;
 
 	var __compile__ = function(module, exports, require) {
+		if (typeof module.source === 'function') return module.source(module, exports, require);
 		eval('(function(){ '+module.source+'\n})')();		
 	};
 

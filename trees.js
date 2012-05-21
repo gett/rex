@@ -9,7 +9,7 @@ var WATCH_OPTIONS = {interval: 100, persistent: false};
 var md5 = function(str) {
 	return crypto.createHash('md5').update(str).digest('hex');
 };
-var dotjs = function(name) {
+var ext = function(name) {
 	return name.replace(/\.js$/, '')+'.js';
 };
 var findModule = function(name, cwd, callback) {
@@ -24,7 +24,7 @@ var findModule = function(name, cwd, callback) {
 					path.join(folder, name, 'browser.js'),
 					path.join(folder, name, 'index.js'),
 					path.join(folder, name, 'package.json'),
-					path.join(folder, dotjs(name))
+					path.join(folder, ext(name))
 				];
 			}));
 			files.forEach(function(file) {
@@ -55,27 +55,36 @@ var findModule = function(name, cwd, callback) {
 	], callback);
 };
 var resolve = function(url, options, callback) {
-	var root = options.root;
 	var cache = {};
 	var inlined;
+	var roots;
 
 	if (typeof url === 'function') {
 		inlined = url;
-		url = path.join(options.root, 'source.js');
+		url = 'source.js';
+		roots = [];
+	} else {
+		roots = path.dirname(url).split('/');
 	}
 
-	var humanify = function(path) {
-		var dir = root.replace(/\/$/, '')+'/';
+	var hideRoot = function(path) {
+		path = path.split('/');
 
-		if (path.indexOf(dir) === 0) return path.replace(dir, '');
-		return path.replace('/index.js', '').replace('/browser.js', '').split('/').pop();
+		for (var i = 0; i < roots.length; i++) {
+			if (path[0] === roots[i]) {
+				path.shift();
+			} else {
+				path.unshift('..');
+			}
+		}
+		return path.join('/');
 	};
 	var resolveFile = function(url, callback) {
 		if (!url) return callback(null, null);
 		if (cache[url]) return callback(null, cache[url]);
 
 		var cwd = path.dirname(url);
-		var mod = cache[url] = {url: url, name: humanify(url)};
+		var mod = cache[url] = {url: url, name: hideRoot(url)};
 		var reqs;
 
 		common.step([
@@ -95,7 +104,7 @@ var resolve = function(url, options, callback) {
 
 				reqs.forEach(function(req, i) {
 					if (options.dependencies[req]) return next.parallel()();
-					if (req[0] === '.') return next.parallel()(null, path.join(cwd, dotjs(req)));
+					if (req[0] === '.') return next.parallel()(null, path.join(cwd, ext(req)));
 					findModule(req, cwd, next.parallel());
 				});
 			},
@@ -119,16 +128,14 @@ var resolve = function(url, options, callback) {
 };
 var parser = function(options) {
 	options = options || {};
-	options.root = options.root || '.';
 	options.dependencies = options.dependencies || {};
 
 	return function(url, callback) {
 		common.step([
 			function(next) {
-				fs.realpath(options.root, next);
+				fs.realpath(url, next);
 			},
-			function(abs, next) {
-				options.root = abs;
+			function(url, next) {
 				resolve(url, options, next);
 			},
 			function(tree) {
@@ -146,12 +153,12 @@ parser.requires = function(src) { // mainly exposed for testing...
 		return strs.push(str)-1;
 	};
 
-	src = src.replace(/'((?:(?:\\')|[^'])*)'/g, save);                      // save ' based strings
-	src = src.replace(/"((?:(?:\\")|[^"])*)"/g, save);                      // save " based strings
-	src = src.replace(/(\n|^).*\/\/\s*@rex-ignore\s*(\n|$)/gi, '$1');       // remove all ignore lines
-	src = src.replace(/\\\//g, '@');                                        // regexps
-	src = src.replace(/\/\/.*/g, '@');                                      // remove all comments
-	src = src.replace(/\/\*([^*]|\*[^\/])*\*\//g, '@');                     // remove all multiline comments
+	src = src.replace(/'((?:(?:\\')|[^'])*)'/g, save);                // save ' based strings
+	src = src.replace(/"((?:(?:\\")|[^"])*)"/g, save);                // save " based strings
+	src = src.replace(/(\n|^).*\/\/\s*@rex-ignore\s*(\n|$)/gi, '$1'); // remove all ignore lines
+	src = src.replace(/\\\//g, '@');                                  // regexps
+	src = src.replace(/\/\/.*/g, '@');                                // remove all comments
+	src = src.replace(/\/\*([^*]|\*[^\/])*\*\//g, '@');               // remove all multiline comments
 
 	// missing some lookahead / lookbehind logic here
 	src.replace(/(?:^|[^\w.])require\s*\(\s*((?:\d+(?:\s*,\s*)?)+)\s*\)(?:[^\w]|$)/g, function(_, i) {
@@ -180,24 +187,6 @@ parser.visit = function(tree, fn) {
 
 	if (Array.isArray(tree)) return tree.forEach(first);
 	first(tree);
-};
-parser.watch = function(tree, fn) {
-	var files = [];
-	var onchange = function(prev, cur) {
-		if (prev.mtime.getTime() === cur.mtime.getTime()) return;
-		files.forEach(function(file) {
-			file.removeListener('change', onchange);
-		});
-		fn();
-	};
-
-	parser.visit(tree, function(mod) {
-		if (mod.inlined) return;
-		files.push(mod.url);
-	});
-	files = files.map(function(file) {
-		return (file = fs.watchFile(file, WATCH_OPTIONS, onchange)).setMaxListeners(0) || file;
-	});
 };
 
 module.exports = parser;

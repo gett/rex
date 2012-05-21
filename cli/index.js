@@ -4,8 +4,8 @@
 
 var argv = require('optimist')
 			.alias('o', 'out')
-			.alias('m', 'main')
-			.alias('c', 'minify')
+			.alias('b', 'base')
+			.alias('m', 'minify')
 			.alias('h', 'help')
 			.alias('w', 'watch')
 			.alias('l', 'listen')
@@ -20,8 +20,8 @@ var options = {};
 if (process.argv.length < 3 || argv.help) {
 	console.error('\nusage: rex path [options]\n\n'+
 		'if you create a rex.json file in your js dir rex will use its settings\n\n'+
-		'--main    -m: specify a main js file that rex can assume is loaded before any other file\n'+
-		'--minify  -c: minify the compiled code\n'+
+		'--base    -b: specify a base js file that rex can assume is loaded before any other file\n'+
+		'--minify  -m: minify the compiled code\n'+
 		'--out,    -o: compile to a specific path or file suffix if input path is a dir\n'+
 		'--watch,  -w: watch the file and recompile if it or its dependencies changes. requires -o\n'+
 		'--listen, -l: start a rex server on a given port serving cwd. port defaults to 8888\n'
@@ -35,17 +35,13 @@ try {
 } catch (err) {}
 
 if (!('minify' in options)) options.minify = argv.minify;
-if (!('main' in options)) options.main = typeof argv.main === 'string' && argv.main;
+if (!('base' in options)) options.base = typeof argv.base === 'string' && argv.base;
 
 argv.out = argv.out || options.out;
-argv.watch = argv.watch || options.watch;
-
-options.onchange = function() {
-	compile();
-};
+argv.watch = argv.out && (argv.watch || options.watch);
 
 var file = process.argv[2];
-var parse = rex('.', options);
+var parse = rex(options);
 
 if (argv.listen) {
 	var port = typeof argv.listen === 'number' ? argv.listen : 8888;
@@ -58,7 +54,7 @@ if (argv.listen) {
 			return;
 		}
 
-		var url = decodeURIComponent(req.url.substr(1));
+		var url = decodeURIComponent(req.url.substr(1)).replace('~', process.env.HOME);
 
 		cat(url, function(err, str) {
 			if (err) return res.end(err.stack);
@@ -78,8 +74,19 @@ var stat = fs.statSync(file);
 var out = typeof argv.out === 'string' && argv.out;
 
 if (!out && stat.isDirectory()) out = 'lib';
-if (argv.watch && out) setInterval(function() {}, 10000); // hackish keep-alive
 
+var watch = function(files, fn) {
+	var onchange = function() {
+		files.forEach(function(file) {
+			file.removeListener('change', onchange);
+		});
+		fn();
+	};
+
+	files = files.map(function(file) {
+		return (file = fs.watchFile(file, {interval:100})).setMaxListeners(0) || file;
+	});
+};
 var compile = function() {
 	if (stat.isDirectory()) {
 		out = out || 'lib';
@@ -88,14 +95,16 @@ var compile = function() {
 			if (file.substr(-out.length-4) === '.'+out+'.js') return false;
 			return /\.js$/.test(file);
 		}).forEach(function(file) {
-			parse(file, function(err, str) {
+			parse(file, function(err, str, files) {
+				if (argv.watch) watch(files, compile);
 				if (err) return console.error(err.message);
 				fs.writeFile(file.replace(/\.js$/, '.'+out+'.js'), str);
 			});
 		});
 		return;
 	}
-	parse(file, function(err, str) {
+	parse(file, function(err, str, files) {
+		if (argv.watch) watch(files, compile);
 		if (err) return console.error(err.stack);
 		if (out) return fs.writeFile(out, str);
 		console.log(str);
