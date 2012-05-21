@@ -40,7 +40,7 @@ module.exports = function(options) {
 		Object.keys(mod.dependencies).forEach(function(req) {
 			requires[req] = mod.dependencies[req].id;
 		});
-		return 'rex("'+mod.id+'",'+JSON.stringify(requires)+','+JSON.stringify(src)+');';
+		return 'rex("'+mod.id+'",'+JSON.stringify(requires)+','+src+');';
 	};	
 	var realpath = function(url, callback) {
 		if (!url) return callback();
