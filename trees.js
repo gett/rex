@@ -50,7 +50,7 @@ var findModule = function(name, cwd, callback) {
 			}
 
 			if (!json.browserify && !json.main) return callback(null, null);
-			callback(null, path.join(path.dirname(url), json.browserify || json.main));
+			callback(null, path.join(path.dirname(url), (json.browserify || json.main).replace(/\.js$/, '')+'.js'));
 		}
 	], callback);
 };
