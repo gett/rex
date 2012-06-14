@@ -94,7 +94,7 @@ var watch = function(files, fn) {
 	};
 
 	files = files.map(function(file) {
-		return (file = fs.watchFile(file, {interval:100})).setMaxListeners(0) || file;
+		return (file = fs.watchFile(file, {interval:100}, onchange)).setMaxListeners(0) || file;
 	});
 };
 var compile = function() {
