@@ -44,7 +44,6 @@ if (!('eval' in options)) options.eval = !argv.noeval;
 
 argv.source = argv.source || options.source;
 argv.out = argv.out || options.out;
-argv.watch = argv.out && (argv.watch || options.watch);
 
 var file = process.argv[2];
 var parse = rex(options);
@@ -84,6 +83,8 @@ var stat = typeof file === 'string' && fs.statSync(file);
 var out = typeof argv.out === 'string' && argv.out;
 
 if (!out && stat && stat.isDirectory()) out = 'lib';
+
+argv.watch = out && (argv.watch || options.watch);
 
 var watch = function(files, fn) {
 	var onchange = function() {
