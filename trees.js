@@ -46,7 +46,7 @@ var findModule = function(name, cwd, callback) {
 				];
 			}));
 			files.forEach(function(file) {
-				path.exists(file, next.parallel().bind(null, null));
+				(fs.exists || path.exists)(file, next.parallel().bind(null, null));
 			});
 		},
 		function(exists, next) {
