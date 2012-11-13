@@ -63,7 +63,7 @@ if (argv.listen) {
 			return;
 		}
 
-		var url = decodeURIComponent(req.url.substr(1)).replace('~', process.env.HOME);
+		var url = decodeURIComponent(req.url.substr(1)).replace('~', process.env.HOME).replace(/^file:\/\/\/C:\//, '/');
 
 		cat(url, function(err, str) {
 			if (err) return res.end(err.stack);
