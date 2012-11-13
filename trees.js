@@ -56,7 +56,7 @@ var findModule = function(name, cwd, callback) {
 
 			if (url && /\.json$/.test(url)) return fs.readFile(url, 'utf-8', next);
 			if (url) return callback(null, url);
-			if (cwd === '/') return callback(null, null);
+			if (cwd === path.resolve('/')) return callback(null, null);
 
 			findModule(name, path.join(cwd, '..'), callback);
 		},
