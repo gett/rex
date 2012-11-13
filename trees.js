@@ -12,6 +12,24 @@ var md5 = function(str) {
 var ext = function(name) {
 	return name.replace(/\.js$/, '')+'.js';
 };
+var findRelativeModule = function(name, cwd, callback) {
+	var files = [path.join(cwd, ext(name)), path.join(cwd, name, 'index.js')];
+
+	common.step([
+		function(next) {
+			files.forEach(function(file) {
+				path.exists(file, next.parallel().bind(null, null));
+			});
+		},
+		function(exists) {
+			var url = files.filter(function(_, i) {
+				return exists[i];
+			})[0];
+
+			callback(null, url);
+		}
+	], callback);
+};
 var findModule = function(name, cwd, callback) {
 	var files;
 	var url;
@@ -104,7 +122,7 @@ var resolve = function(url, options, callback) {
 
 				reqs.forEach(function(req, i) {
 					if (options.dependencies[req]) return next.parallel()();
-					if (req[0] === '.') return next.parallel()(null, path.join(cwd, ext(req)));
+					if (req[0] === '.') return findRelativeModule(req, cwd, next.parallel());
 					findModule(req, cwd, next.parallel());
 				});
 			},
