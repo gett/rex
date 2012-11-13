@@ -33,6 +33,9 @@ var foo = require('./foo'); // will look for foo.js in the same folder
 var bar = require('bar');   // will look for bar.js or bar/index.js in 
                             // the nearest browser_modules or node_modules folder
 
+// will not look for module baz. Usefull when sharing modules with node.js
+var baz = require('baz'); // @rex-ignore
+
 module.exports = function() { // will export a function
 	return 'hello from module';
 };
