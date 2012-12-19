@@ -2,7 +2,8 @@
  "name":"rex-cli",
  "description":"rex-cli is the cli equivivalent of rex",
  "keywords": ["browser", "commonjs", "cli", "require"],
- "version":"0.3.0",
+ "version":"0.3.1",
+ "repository":"https://github.com/gett/rex",
  "author": "Ge.tt <hello@ge.tt>",
  "contributors": [
    "Mathias Buus Madsen <m@ge.tt>"
