@@ -7,5 +7,5 @@
  "contributors": [
    "Mathias Buus Madsen <m@ge.tt>"
  ],
- "dependencies": {"common":">=0.2.0", "uglify-js":">=1.2.6"}
+ "dependencies": {"common":">=0.2.0", "uglify-js":">=1.2.6", "find-module":">=0.1.1"}
 }
