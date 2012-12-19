@@ -1,8 +1,8 @@
 {
  "name":"rex-cli",
  "description":"rex-cli is the cli equivivalent of rex",
- "keywords": ["browser", "commonjs", "cli"],
- "version":"0.2.5",
+ "keywords": ["browser", "commonjs", "cli", "require"],
+ "version":"0.3.0",
  "author": "Ge.tt <hello@ge.tt>",
  "contributors": [
    "Mathias Buus Madsen <m@ge.tt>"
@@ -10,5 +10,5 @@
  "bin": {
  	"rex":"index.js"
  },
- "dependencies": {"common":">=0.2.0", "uglify-js":">=1.2.6", "rex":"0.6.x", "optimist":"0.3.x", "cat":"*"}
+ "dependencies": {"common":">=0.2.0", "rex":"0.6.x", "optimist":"0.3.x", "cat":"*"}
 }

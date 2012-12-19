@@ -5,7 +5,6 @@
 var argv = require('optimist')
 			.alias('o', 'out')
 			.alias('b', 'base')
-			.alias('m', 'minify')
 			.alias('h', 'help')
 			.alias('w', 'watch')
 			.alias('l', 'listen')
@@ -24,7 +23,6 @@ if (process.argv.length < 3 || argv.help) {
 		'if you create a rex.json file in your js dir rex will use its settings\n\n'+
 		'--source  -s: a string to compile instead of a file\n'+
 		'--base    -b: specify a base js file that rex can assume is loaded before any other file\n'+
-		'--minify  -m: minify the compiled code\n'+
 		'--out,    -o: compile to a specific path or file suffix if input path is a dir\n'+
 		'--watch,  -w: watch the file and recompile if it or its dependencies changes. requires -o\n'+
 		'--noeval, -n: do not use eval in the compiled code\n'+ 
@@ -38,7 +36,6 @@ try {
 	options = JSON.parse(fs.readFileSync('rex.json', 'utf-8'));
 } catch (err) {}
 
-if (!('minify' in options)) options.minify = argv.minify;
 if (!('base' in options)) options.base = typeof argv.base === 'string' && argv.base;
 if (!('eval' in options)) options.eval = !argv.noeval;
 
