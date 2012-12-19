@@ -2,6 +2,7 @@ var common = require('common');
 var crypto = require('crypto');
 var fs = require('fs');
 var path = require('path');
+var detective = require('detective');
 var findModule = require('find-module');
 
 var MODULE_FOLDERS = 'browser_modules js_modules node_modules'.split(' ');
@@ -107,31 +108,7 @@ var parser = function(options) {
 	};
 };
 
-parser.requires = function(src) { // mainly exposed for testing...
-	var strs = [];
-	var modules = [];
-
-	var save = function(_, str) {
-		return strs.push(str)-1;
-	};
-
-	src = src.replace(/'((?:(?:\\')|[^'])*)'/g, save);                // save ' based strings
-	src = src.replace(/"((?:(?:\\")|[^"])*)"/g, save);                // save " based strings
-	src = src.replace(/(\n|^).*\/\/\s*@rex-ignore\s*(\n|$)/gi, '$1'); // remove all ignore lines
-	src = src.replace(/\\\//g, '@');                                  // regexps
-	src = src.replace(/\/\/.*/g, '@');                                // remove all comments
-	src = src.replace(/\/\*([^*]|\*[^\/])*\*\//g, '@');               // remove all multiline comments
-
-	// missing some lookahead / lookbehind logic here
-	src.replace(/(?:^|[^\w.])require\s*\(\s*((?:\d+(?:\s*,\s*)?)+)\s*\)(?:[^\w]|$)/g, function(_, i) {
-		i.split(/\s*,\s*/g).forEach(function(i) {
-			if (modules.indexOf(strs[i]) > -1) return;
-			modules.push(strs[i]);
-		});
-	});
-
-	return modules;
-};
+parser.requires = detective;
 parser.visit = function(tree, fn) {
 	var visited = {};
 	var visit = function(tree, parent) {
