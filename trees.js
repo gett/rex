@@ -55,6 +55,17 @@ var resolve = function(url, options, callback) {
 				mod.source = source;
 				mod.id = md5(url);
 
+				if(path.extname(url) === '.json') {
+					try {
+						var json = JSON.stringify(JSON.parse(mod.source));
+						mod.source = common.format('module.exports = {0};', json);
+					} catch (err) {
+						return callback(err);
+					}
+
+					return callback(null, mod);
+				}
+
 				reqs = parser.requires(source);
 
 				if (!reqs.length) return callback(null, mod);
@@ -64,7 +75,7 @@ var resolve = function(url, options, callback) {
 
 					var parallel = next.parallel();
 					findModule(req, { dirname: cwd, modules: MODULE_FOLDERS }, function(err, filename) {
-						if (err && err.code === 'ENOENT') return parallel();
+						if (err && err.code === 'ENOENT') return parallel(null, null);
 						if (err) return parallel(err);
 						parallel(null, filename);
 					});
