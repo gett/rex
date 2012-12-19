@@ -1,8 +1,8 @@
 {
  "name":"rex-cli",
  "description":"rex-cli is the cli equivivalent of rex",
- "keywords": ["browser", "commonjs", "cli"],
- "version":"0.2.5",
+ "keywords": ["browser", "commonjs", "cli", "require"],
+ "version":"0.2.6",
  "author": "Ge.tt <hello@ge.tt>",
  "contributors": [
    "Mathias Buus Madsen <m@ge.tt>"
