@@ -2,10 +2,10 @@
  "name":"rex",
  "description":"rex is browserside commonjs",
  "keywords": ["browser", "commonjs", "require"],
- "version":"0.6.7",
+ "version":"0.7.0",
  "author": "Ge.tt <hello@ge.tt>",
  "contributors": [
    "Mathias Buus Madsen <m@ge.tt>"
  ],
- "dependencies": {"common":">=0.2.0", "uglify-js":">=1.2.6", "find-module":"~0.1.1", "detective":"~0.2.1"}
+ "dependencies": {"common":">=0.2.0", "find-module":"~0.1.1", "detective":"~0.2.1"}
 }
