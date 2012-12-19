@@ -1,8 +1,8 @@
 {
  "name":"rex",
  "description":"rex is browserside commonjs",
- "keywords": ["browser", "commonjs"],
- "version":"0.6.6",
+ "keywords": ["browser", "commonjs", "require"],
+ "version":"0.6.7",
  "author": "Ge.tt <hello@ge.tt>",
  "contributors": [
    "Mathias Buus Madsen <m@ge.tt>"
