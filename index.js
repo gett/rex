@@ -2,21 +2,10 @@ var fs = require('fs');
 var path = require('path');
 var common = require('common');
 var crypto = require('crypto');
-var ujs = require('uglify-js');
 var zlib = require('zlib');
 var trees = require('./trees');
 
-var minify = function(source) {
-	try {
-		source = ujs.uglify.gen_code(ujs.uglify.ast_squeeze(ujs.uglify.ast_mangle(ujs.parser.parse('(function(){\n'+source+'\n})'))));
-		return source.substring(12, source.length-2).trim();
-	} catch (err) {
-		return source;
-	}
-};
-
 var REX_SOURCE = fs.readFileSync(__dirname+'/rex.js', 'utf-8');
-var REX_SOURCE_MIN = minify(REX_SOURCE).replace(/<\/script>/g, '<\\\/script>');
 
 module.exports = function(options) {
 	options = options || {};
@@ -28,15 +17,13 @@ module.exports = function(options) {
 		return typeof url === 'string';
 	});
 
-	var parse = trees(options);	
-	var boiler = options.minify ? REX_SOURCE_MIN : REX_SOURCE;
+	var parse = trees(options);
 
 	var wrap = function(mod) {
 		var requires = {};
-		var src = (options.minify ? minify(mod.source) : mod.source)+'\n//@ sourceURL='+mod.name;
-		var padding = options.minify ? '' : '\t';
+		var src = mod.source+'\n//@ sourceURL='+mod.name;
 
-		src = options.eval !== false ? JSON.stringify(src) : 'function(module, exports, require) {\n'+padding+src.split('\n').join('\n'+padding)+'\n}';
+		src = options.eval !== false ? JSON.stringify(src) : 'function(module, exports, require) {\n\t'+src.split('\n').join('\n\t')+'\n}';
 
 		Object.keys(mod.dependencies).forEach(function(req) {
 			requires[req] = mod.dependencies[req].id;
@@ -59,7 +46,7 @@ module.exports = function(options) {
 		});
 
 		if (based) return result+'rex.run("'+tree.id+'");\n';
-		return boiler+'\n'+result+'rex.run("'+tree.id+'",'+JSON.stringify(urls)+');\n';
+		return REX_SOURCE+'\n'+result+'rex.run("'+tree.id+'",'+JSON.stringify(urls)+');\n';
 	};
 
 	return function(url, callback) {

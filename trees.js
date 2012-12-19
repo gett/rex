@@ -2,76 +2,15 @@ var common = require('common');
 var crypto = require('crypto');
 var fs = require('fs');
 var path = require('path');
+var detective = require('detective');
+var findModule = require('find-module');
 
 var MODULE_FOLDERS = 'browser_modules js_modules node_modules'.split(' ');
-var WATCH_OPTIONS = {interval: 100, persistent: false};
 
 var md5 = function(str) {
 	return crypto.createHash('md5').update(str).digest('hex');
 };
-var ext = function(name) {
-	return name.replace(/\.js$/, '')+'.js';
-};
-var findRelativeModule = function(name, cwd, callback) {
-	var files = [path.join(cwd, ext(name)), path.join(cwd, name, 'index.js')];
 
-	common.step([
-		function(next) {
-			files.forEach(function(file) {
-				path.exists(file, next.parallel().bind(null, null));
-			});
-		},
-		function(exists) {
-			var url = files.filter(function(_, i) {
-				return exists[i];
-			})[0];
-
-			callback(null, url);
-		}
-	], callback);
-};
-var findModule = function(name, cwd, callback) {
-	var files;
-	var url;
-
-	common.step([
-		function(next) {
-			files = Array.prototype.concat.apply([], MODULE_FOLDERS.map(function(folder) {
-				folder = path.join(cwd, folder);
-				return [
-					path.join(folder, name, 'browser.js'),
-					path.join(folder, name, 'index.js'),
-					path.join(folder, name, 'package.json'),
-					path.join(folder, ext(name))
-				];
-			}));
-			files.forEach(function(file) {
-				(fs.exists || path.exists)(file, next.parallel().bind(null, null));
-			});
-		},
-		function(exists, next) {
-			url = files.filter(function(_, i) {
-				return exists[i];
-			})[0];
-
-			if (url && /\.json$/.test(url)) return fs.readFile(url, 'utf-8', next);
-			if (url) return callback(null, url);
-			if (cwd === path.resolve('/')) return callback(null, null);
-
-			findModule(name, path.join(cwd, '..'), callback);
-		},
-		function(json) {
-			try {
-				json = JSON.parse(json);
-			} catch (err) {
-				return callback(err);
-			}
-
-			if (!json.browserify && !json.main) return callback(null, null);
-			callback(null, path.join(path.dirname(url), (json.browserify || json.main).replace(/\.js$/, '')+'.js'));
-		}
-	], callback);
-};
 var resolve = function(url, options, callback) {
 	var source;
 
@@ -116,14 +55,30 @@ var resolve = function(url, options, callback) {
 				mod.source = source;
 				mod.id = md5(url);
 
+				if(path.extname(url) === '.json') {
+					try {
+						var json = JSON.stringify(JSON.parse(mod.source));
+						mod.source = common.format('module.exports = {0};', json);
+					} catch (err) {
+						return callback(err);
+					}
+
+					return callback(null, mod);
+				}
+
 				reqs = parser.requires(source);
 
 				if (!reqs.length) return callback(null, mod);
 
 				reqs.forEach(function(req, i) {
 					if (options.dependencies[req]) return next.parallel()();
-					if (req[0] === '.') return findRelativeModule(req, cwd, next.parallel());
-					findModule(req, cwd, next.parallel());
+
+					var parallel = next.parallel();
+					findModule(req, { dirname: cwd, modules: MODULE_FOLDERS }, function(err, filename) {
+						if (err && err.code === 'ENOENT') return parallel(null, null);
+						if (err) return parallel(err);
+						parallel(null, filename);
+					});
 				});
 			},
 			function(deps, next) {
@@ -164,31 +119,7 @@ var parser = function(options) {
 	};
 };
 
-parser.requires = function(src) { // mainly exposed for testing...
-	var strs = [];
-	var modules = [];
-
-	var save = function(_, str) {
-		return strs.push(str)-1;
-	};
-
-	src = src.replace(/'((?:(?:\\')|[^'])*)'/g, save);                // save ' based strings
-	src = src.replace(/"((?:(?:\\")|[^"])*)"/g, save);                // save " based strings
-	src = src.replace(/(\n|^).*\/\/\s*@rex-ignore\s*(\n|$)/gi, '$1'); // remove all ignore lines
-	src = src.replace(/\\\//g, '@');                                  // regexps
-	src = src.replace(/\/\/.*/g, '@');                                // remove all comments
-	src = src.replace(/\/\*([^*]|\*[^\/])*\*\//g, '@');               // remove all multiline comments
-
-	// missing some lookahead / lookbehind logic here
-	src.replace(/(?:^|[^\w.])require\s*\(\s*((?:\d+(?:\s*,\s*)?)+)\s*\)(?:[^\w]|$)/g, function(_, i) {
-		i.split(/\s*,\s*/g).forEach(function(i) {
-			if (modules.indexOf(strs[i]) > -1) return;
-			modules.push(strs[i]);
-		});
-	});
-
-	return modules;
-};
+parser.requires = detective;
 parser.visit = function(tree, fn) {
 	var visited = {};
 	var visit = function(tree, parent) {
